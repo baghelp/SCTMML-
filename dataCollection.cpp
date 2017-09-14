@@ -166,32 +166,32 @@ void dataCollection::moveTheBall( double x, double y, double z ) {
 
 void dataCollection::initializeController() {
 
-  for( rLength[1] = MIN_RL; rLength[1] < MAX_RL; rLength[1]+=0.25 ) {
-    for( rLength[2] = MIN_RL; rLength[2] < MAX_RL; rLength[2]+=0.25 ) {
-      for( rLength[3] = MIN_RL; rLength[3] < MAX_RL; rLength[3]+=0.25 ) {
-        for( rLength[4] = MIN_RL; rLength[4] < MAX_RL; rLength[4]+=0.25 ) {
-          for( rLength[5] = MIN_RL; rLength[5] < MAX_RL; rLength[5]+=0.25 ) {
-            for( rLength[6] = MIN_RL; rLength[6] < MAX_RL; rLength[6]+=0.25 ) {
-              for( rLength[7] = MIN_RL; rLength[7] < MAX_RL; rLength[7]+=0.25 ) {
-                for( rLength[8] = MIN_RL; rLength[8] < MAX_RL; rLength[8]+=0.25 ) {
-                  for( rLength[9] = MIN_RL; rLength[9] < MAX_RL; rLength[9]+=0.25 ) {
-                    for( rLength[10] = MIN_RL; rLength[10] < MAX_RL; rLength[10]+=0.25 ) {
-                      for( rLength[11] = MIN_RL; rLength[11] < MAX_RL; rLength[11]+=0.25 ) {
-                        for( rLength[12] = MIN_RL; rLength[12] < MAX_RL; rLength[12]+=0.25 ) {
-
-
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  // for( rLength[1] = MIN_RL; rLength[1] < MAX_RL; rLength[1]+=0.25 ) {
+  //   for( rLength[2] = MIN_RL; rLength[2] < MAX_RL; rLength[2]+=0.25 ) {
+  //     for( rLength[3] = MIN_RL; rLength[3] < MAX_RL; rLength[3]+=0.25 ) {
+  //       for( rLength[4] = MIN_RL; rLength[4] < MAX_RL; rLength[4]+=0.25 ) {
+  //         for( rLength[5] = MIN_RL; rLength[5] < MAX_RL; rLength[5]+=0.25 ) {
+  //           for( rLength[6] = MIN_RL; rLength[6] < MAX_RL; rLength[6]+=0.25 ) {
+  //             for( rLength[7] = MIN_RL; rLength[7] < MAX_RL; rLength[7]+=0.25 ) {
+  //               for( rLength[8] = MIN_RL; rLength[8] < MAX_RL; rLength[8]+=0.25 ) {
+  //                 for( rLength[9] = MIN_RL; rLength[9] < MAX_RL; rLength[9]+=0.25 ) {
+  //                   for( rLength[10] = MIN_RL; rLength[10] < MAX_RL; rLength[10]+=0.25 ) {
+  //                     for( rLength[11] = MIN_RL; rLength[11] < MAX_RL; rLength[11]+=0.25 ) {
+  //                       for( rLength[12] = MIN_RL; rLength[12] < MAX_RL; rLength[12]+=0.25 ) {
+  //
+  //
+  //                       }
+  //                     }
+  //                   }
+  //                 }
+  //               }
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 }
 
 
