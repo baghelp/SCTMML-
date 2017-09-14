@@ -66,7 +66,7 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
-// #include <ssteam> 
+#include <fstream> 
 #include "helpers/FileHelpers.h"
 #include <stdexcept>
 #include <string.h>
@@ -78,10 +78,15 @@
 #define PAYLOAD_MASS 10
 #define ROD_MASS 6
 #define NUM_CABLES 12
+#define MIN_TENSION 0.5
+#define COM_EPSILON 0.1
+#define RL_STEP_SIZE 1
 #define MAX_RL 10
 #define MIN_RL 0.5
-#define MIN_TENSION 2000
-#define COM_EPSILON 0.01
+// #define RL_STEP_SIZE 1
+// #define MAX_RL 3
+// #define MIN_RL 1
+#define OUT_FILE "./dataLog.txt"
 using namespace std;
 using namespace boost::numeric;
 
@@ -165,7 +170,27 @@ public:
 
   /**
    */
-  // vec modelCOM();
+  btVector3 deltaModelCOM();
+
+
+  /**
+   */
+  btVector3 getModelCOM();
+
+
+  /**
+   */
+  void stepRLength();
+
+
+  /**
+   */
+  bool cablesAboveTension( double );
+
+
+  /**
+   */
+  void writeData( string );
 
 
 protected:
@@ -210,7 +235,13 @@ private:
   std::string const RODS[6] = {"rod_1", "rod_2", "rod_3", "rod_4", "rod_5",
     "rod_6"};
   std::string const CUBE = "super_cube";
-  double rLength[12];
+  double rLength[12] = {MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL};
+  double triangleStart[12] = {2.5, 0.5, 0.5, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL};
+  bool finished = false;
+  int rlptr = 0;
+  btVector3 COM = btVector3(0,0,0);
+  btVector3 initialCOM = btVector3(0,0,0);
+  int run = 0;
   //
   // rows = cables, colums = nodes. connections are 1 or -1
   // (-1 is the cube connection, 1 is the rod connection)

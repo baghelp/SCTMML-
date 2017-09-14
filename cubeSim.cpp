@@ -39,6 +39,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "cubeSim.h"
 
 /**
  * The entry point.
@@ -109,10 +110,36 @@ int main(int argc, char** argv)
     // FILL IN 6.7 HERE
 
     // Add the model to the world
-    simulation.addModel(myModel);
-
-    simulation.run();
+    while( !finished ) {
+      simulation.addModel(myModel);
+      simulation.run();
 
     // teardown is handled by delete
     return 0;
 }
+
+
+void stepRLength() {
+  // increment the current value
+  rLength[rlptr] += RL_STEP_SIZE;
+  if( rLength[rlptr] > MAX_RL ) {
+    // if value overflows, go up one
+    rlptr++;
+    if( rlptr >= sizeof(rLength)/sizeof(rLength[0]) ) {
+      // we've gone through all the values. set finished flag to true
+      finished = true;
+      cout<<"done"<<endl;
+      return;
+    }
+    stepRLength();
+  }
+  else {
+    // otherwise, everything below this value should be at minimum
+    for( int i = 0; i < rlptr; i++ ) {
+      rLength[i] = MIN_RL;
+    }
+    rlptr = 0;
+  }
+  return;
+}
+
