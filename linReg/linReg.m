@@ -30,13 +30,18 @@ fprintf('Loading and Visualizing Data ...\n')
 % Load from ex5data1: 
 % You will have X, y, Xval, yval, Xtest, ytest in your environment
 % load ('ex5data1.mat');
-data = load ('dataLog.txt');
+data = load ('oldLog.txt');
 shuffledData = data( randperm( size( data, 1) ), :) ;
 m = size(shuffledData, 1);
-X = shuffledData(1:round(0.75*m), 1:3);
-y = shuffledData(1:round(0.75*m), 4:end);
-Xval = shuffledData(round(0.75*m):end, 1:3);
-yval = shuffledData(round(0.75*m):end, 4:end);
+X = shuffledData(1:round(0.6*m), 1:3);
+y = shuffledData(1:round(0.6*m), 4:end);
+Xval = shuffledData(round(0.6*m):(0.8*m), 1:3);
+yval = shuffledData(round(0.6*m):(0.8*m), 4:end);
+Xtest = shuffledData(round(0.8*m):end, 1:3);
+ytest = shuffledData(round(0.8*m):end, 4:end);
+% yval = yval(:, [1:6,8:end]);
+% y = y(:, [1:6,8:end]);
+
 % sxv = size(Xval)
 % syv = size(yval)
 % sx = size(X)
@@ -92,14 +97,23 @@ m = size(X, 1);
 %
 
 %  Train linear regression with lambda
-lambda = 5;
+% lambda = 5000; % 8.64 cv error
+% lambda = 500; % 8.64
+% lambda = 50; % 8.51
+% lambda = 20; % 8.43
+lambda = 20; % 8.52
+% lambda = 10; % 8.47
+% lambda = 5; % 8.56
+%% Conclusion: the higher error in cv dataset is not because of overfitting, but
+%is just because of inherent nonlinearities in the
 fprintf('Training linear regression with lambda = %f\n', lambda);
 % [theta] = trainLinearReg([ones(m, 1) X], y, lambda);
-theta = ones(4, 13);
-initial_theta = zeros(size(X, 2), 13);
+theta = ones(4, 12);
+% initial_theta = zeros(size(X, 2), 12);
 alpha = 0.001;
 iterations = 4000;
 [theta, J_history] = gradientDescentMulti([ones(m, 1) X], y, theta, lambda, alpha, iterations);
+% [theta, J_history] = gradientDescentMulti(X, y, initial_theta, lambda, alpha, iterations);
 
 plot([1:size(J_history, 1)], J_history)
 %  Plot fit over the data
@@ -150,7 +164,7 @@ pause;
 %  complete polyFeatures to map each example into its powers
 %
 
-p = 8;
+p = 2;
 
 % Map X onto Polynomial Features and Normalize
 X_poly = polyFeatures(X, p);
@@ -169,8 +183,8 @@ X_poly_val = bsxfun(@minus, X_poly_val, mu);
 X_poly_val = bsxfun(@rdivide, X_poly_val, sigma);
 X_poly_val = [ones(size(X_poly_val, 1), 1), X_poly_val];           % Add Ones
 
-fprintf('Normalized Training Example 1:\n');
-fprintf('  %f  \n', X_poly(1, :));
+% fprintf('Normalized Training Example 1:\n');
+% fprintf('  %f  \n', X_poly(1, :));
 
 fprintf('\nProgram paused. Press enter to continue.\n');
 pause;
@@ -185,20 +199,25 @@ pause;
 %
 
 lambda = 0;
-[theta] = trainLinearReg(X_poly, y, lambda);
+theta = zeros(10, 12);
+[theta, J_history] = gradientDescentMulti( X_poly, y, theta, lambda, alpha, iterations);
+theta = theta
+% [theta] = trainLinearReg(X_poly, y, lambda);
+% "here"
 
 % Plot training data and fit
-figure(1);
-plot(X, y, 'rx', 'MarkerSize', 10, 'LineWidth', 1.5);
-plotFit(min(X), max(X), mu, sigma, theta, p);
-xlabel('Change in water level (x)');
-ylabel('Water flowing out of the dam (y)');
-title (sprintf('Polynomial Regression Fit (lambda = %f)', lambda));
+% figure(1);
+% plot(X, y, 'rx', 'MarkerSize', 10, 'LineWidth', 1.5);
+% plotFit(min(X), max(X), mu, sigma, theta, p);
+% xlabel('Change in water level (x)');
+% ylabel('Water flowing out of the dam (y)');
+% title (sprintf('Polynomial Regression Fit (lambda = %f)', lambda));
 
 figure(2);
 [error_train, error_val] = ...
-    learningCurve(X_poly, y, X_poly_val, yval, lambda);
-plot(1:m, error_train, 1:m, error_val);
+    learningCurve(X_poly, y, X_poly_val, yval, lambda, theta, alpha,
+    iterations);
+plot(1:50:m, error_train, 1:50:m, error_val);
 
 title(sprintf('Polynomial Regression Learning Curve (lambda = %f)', lambda));
 xlabel('Number of training examples')
@@ -208,8 +227,11 @@ legend('Train', 'Cross Validation')
 
 fprintf('Polynomial Regression (lambda = %f)\n\n', lambda);
 fprintf('# Training Examples\tTrain Error\tCross Validation Error\n');
-for i = 1:m
+
+i = 1;
+for j = 1:50:m
     fprintf('  \t%d\t\t%f\t%f\n', i, error_train(i), error_val(i));
+    i++;
 end
 
 fprintf('Program paused. Press enter to continue.\n');
@@ -222,7 +244,7 @@ pause;
 %
 
 [lambda_vec, error_train, error_val] = ...
-    validationCurve(X_poly, y, X_poly_val, yval);
+    validationCurve(X_poly, y, X_poly_val, yval, theta, alpha, iterations);
 
 close all;
 plot(lambda_vec, error_train, lambda_vec, error_val);

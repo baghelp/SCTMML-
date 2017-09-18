@@ -33,7 +33,7 @@ grad = (X'*(h - y))/m;
 % sthing = size(zeros(1, size(theta, 2) ))
 % sthing2 = size(lambda*theta(2:end, :)/m)
 % sgrad = size(grad)
-grad += [zeros(1, size(theta, 2) ) ; lambda*theta(2:end, :)/m];
+% grad += [zeros(1, size(theta, 2) ) ; lambda*theta(2:end, :)/m];
 
 
 % stheta = size(theta)
