@@ -54,38 +54,34 @@
 // Constructor assigns variables, does some simple sanity checks.
 // Also, initializes the accumulator variable timePassed so that it can
 // be incremented in onStep.
-dataCollection::dataCollection(double startTime,
-    double minTension,
-    double rate,
-    double angleOfTravel
-    double[] rLength  ) {
+dataCollection::dataCollection( string outFile ) {
     
   //vector<string> rods,
   //vector<string> strings) :
-  // startTime(startTime),
+  // CENTER_TIME(CENTER_TIME),
   // minTension(minTension),
   // rate(rate),
   // angleOfTravel(angleOfTravel),
   // timePassed(0.0)
   //{
-  this->startTime = startTime;
-  this->minTension = minTension;
-  this->rate = rate;
-  this->angleOfTravel = angleOfTravel;
+  // this->minTension = minTension;
+  // this->rate = rate;
+  // this->angleOfTravel = angleOfTravel;
+  this->outFile = outFile;
   this->timePassed =  0.0;
   // start time must be greater than or equal to zero
-  if( startTime < 0.0 ) {
+  if( CENTER_TIME < 0.0 ) {
     throw invalid_argument("Start time must be greater than or equal to zero.");
   }
   // minTension must be greater than some lower bound
-  else if( minTension <= 0 ) {
-    throw invalid_argument(
-        "Tension is not high enough. min is currently set to 1." );
-  }
+  // else if( minTension <= 0 ) {
+  //   throw invalid_argument(
+  //       "Tension is not high enough. min is currently set to 1." );
+  // }
   // rate must be greater than zero
-  else if( rate < 0.0 ) {
-    throw invalid_argument("Rate cannot be negative.");
-  }
+  // else if( rate < 0.0 ) {
+  //   throw invalid_argument("Rate cannot be negative.");
+  // }
   // @TODO: what checks to make on tags?
 }
 
@@ -101,15 +97,13 @@ void dataCollection::initializeStructure( TensegrityModel& subject ) {
   cables.erase(cables.begin(), cables.end());
 
   // for each name in CABLES, add the corresponding cable to the cables array
-  for( int i = 0; i < sizeof(CABLES)/sizeof(CABLES[0]); i++ ) {
+  for( int i = 0; i < NUM_CABLES; i++ ) {
     string tag = CABLES[i];
     tgBasicActuator* grabbedCable = subject.find<tgBasicActuator>(tag).front();
-    cout<< "cable length: " << grabbedCable->getRestLength() <<endl;
-    cout<< "cable tension: " << grabbedCable->getRestLength() <<endl;
     cables.push_back(grabbedCable);
   }
   // for each name in RODS, add the corresponding rod to the rods array
-  for( int i = 0; i < sizeof(RODS)/sizeof(RODS[0]); i++ ) {
+  for( int i = 0; i < NUM_RODS; i++ ) {
     string tag = RODS[i];
     tgRod* grabbedRod = subject.find<tgRod>(tag).front();
     rods.push_back(grabbedRod);
@@ -130,9 +124,9 @@ void dataCollection::initializeStructure( TensegrityModel& subject ) {
   }
 
   //add the middle of the cube to the nodes vector
+  btVector3 bottom = btVector3();
   btVector3 top = btVector3();
   btVector3* middle = new btVector3();
-  btVector3 bottom = btVector3();
   top = *(box->ends().first);
   bottom = *(box->ends().second);
   *middle = (top + bottom)/2;
@@ -155,31 +149,34 @@ void dataCollection::onSetup( TensegrityModel& subject )
   //lengthen_vector = {};
   //shorten_vector = {};
   initializeStructure( subject );
-  initializeController();
+  randomizeRLengths();
   // For all the strings in the list, call initializeActuators.
   cout << "Finished setting up the controller." << endl;    
-  moveTheBall( 1, 1, 1);
 }
 
 
-void dataCollection::moveTheBall( double x, double y, double z ) {
-  // 1.create connectivity matrix, calling from and to to get points and stuff
-  int rodsAndCables = 12 + 6;
-  int nodes = 12 + 12;
-  double Connectivity[nodes][rodsAndCables];
+void dataCollection::randomizeRLengths() {
+  srand(time(NULL));
+  lengths[0] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[1] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[2] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[3] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[4] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[5] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[6] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[7] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[8] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[9] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[10] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  lengths[11] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+
 }
 
-void dataCollection::initializeController() {
-  COM = getModelCOM();
-  initialCOM = COM;
 
-}
-
-
-btVector3 dataCollection::deltaModelCOM() {
-  btVector3 COM_new = getModelCOM();
-  btVector3 diff = COM_new - COM;
-  COM = COM_new;
+btVector3 dataCollection::getDeltaModelCOM() {
+  btVector3 newCOM = getModelCOM();
+  // cout<< "New COM: " << newCOM <<". Old COM: "<< COM << "." <<endl;
+  btVector3 diff = newCOM - COM;
   return diff;
 }
 
@@ -196,31 +193,6 @@ btVector3 dataCollection::getModelCOM() {
   return COM_new;
 }
 
-void dataCollection::stepRLength() {
-  // increment the current value
-  rLength[rlptr] += RL_STEP_SIZE;
-  if( rLength[rlptr] > MAX_RL ) {
-    // if value overflows, go up one
-    rlptr++;
-    if( rlptr >= sizeof(rLength)/sizeof(rLength[0]) ) {
-      // we've gone through all the values. set finished flag to true
-      finished = true;
-      cout<<"done"<<endl;
-      return;
-    }
-    stepRLength();
-  }
-  else {
-    // otherwise, everything below this value should be at minimum
-    for( int i = 0; i < rlptr; i++ ) {
-      rLength[i] = MIN_RL;
-    }
-    rlptr = 0;
-  }
-  return;
-}
-
-
 
 /* Return true if all the cables are above the minimum tension
  */
@@ -235,25 +207,51 @@ bool dataCollection::cablesAboveTension( double minTension ) {
 }
 
 
-/* Write the current rLength and final COM data to a file. This data can then be
- * used to train a NN to learn inputs in order to move the COM
+/* Write the current rest lengths and final COM data to a file. This data can then be
+ * used to train Linear Regression to learn inputs in order to move the COM
  */
 void dataCollection::writeData( string outFile ) {
-  cout<< "Writing data to file... ";
+  /* Format:
+   * [1x43]: 1x3 deltaCOM, 1x3 cubeOrientation, 1x39 relative node xyz
+   * locations, 1x12 rlengths
+   */
+  cout<< "Writing data to file "<< outFile <<"...";
+  // calculate change in COM
+  btVector3 diff = getModelCOM() - initialCOM;
+  btVector3 nodeDiff;
   ofstream file(outFile.c_str(), ios::out | ios::app);
   if(file.is_open() ) {
-    file<<" rLengths \n" << *rLength <<endl;
-    file<< endl;
-    file<<" COM change\n" << COM -initialCOM <<endl;
-    file<< endl;
-    file<< endl;
-    file<< endl;
+    // write down change in COM
+    file<< diff.getX()<<", "<<diff.getY() << ", " <<diff.getZ() <<", ";
+    // write down starting orientation of cube
+    file<< initialOrientation.getX()<< ", ";
+    file<< initialOrientation.getY()<< ", ";
+    file<< initialOrientation.getZ()<< ", ";
+    for( int i = 0; i < NUM_CABLES; i++ ) {
+      nodeDiff = *(nodes[i]) - initialCOM;
+      file<< nodeDiff.getX()<<", "<<nodeDiff.getY() << ", " <<nodeDiff.getZ() <<", ";
+    }
+    // write down restLengths
+    file<<
+      cables[0]->getRestLength() <<", "<<
+      cables[1]->getRestLength() <<", "<<
+      cables[2]->getRestLength() <<", "<<
+      cables[3]->getRestLength() <<", "<<
+      cables[4]->getRestLength() <<", "<<
+      cables[5]->getRestLength() <<", "<<
+      cables[6]->getRestLength() <<", "<<
+      cables[7]->getRestLength() <<", "<<
+      cables[8]->getRestLength() <<", "<<
+      cables[9]->getRestLength() <<", "<<
+      cables[10]->getRestLength() <<", "<<
+      cables[11]->getRestLength() << endl;
     file.close();
     cout<< "done!"<<endl;
   }
   else {
     cout<< "Unable to open file"<<endl;
   }
+  // finished = true;
   return;
 }
 
@@ -264,24 +262,11 @@ void dataCollection::writeData( string outFile ) {
  */
 void dataCollection::onStep(TensegrityModel& subject, double dt)
 {
-  double nextRestLength;
-  double currRestLength;
-  double minRestLength;
   timePassed += dt;
-  run = (run + 1) % 5000;
-  // if( !finished ) {
-  //   cout<< "rLengths: " <<endl;
-  //   for( int i = 0; i < 3; i++ ) {
-  //     cout<< rLength[i] << ", ";
-  //   }
-  //   cout<< endl;
-  //   stepRLength();
-  // }
-
 
 
   /* Debugging */
-  // if( timePassed > startTime ) {
+  // if( timePassed > CENTER_TIME ) {
   //   // if enough time has passed, actuate cables
   //   for (size_t i = 0; i < cables.size(); i ++) {	
   //     cables[i]->setControlInput(0.01, dt);
@@ -289,107 +274,96 @@ void dataCollection::onStep(TensegrityModel& subject, double dt)
   // }
   // cout<< cables.size()<<endl;
 
-  if( timePassed > startTime ) {
+  // Fall to a random face
+  // if( timePassed < SETUP_TIME ) {
+  if( simMode == 0 ) {
+    randomizeRLengths();
+    // if( timePassed <= dt ) {
+    if( steps == 0 ) {
+      cout<< "moving to random face"<<endl;
+    }
+    // setup superball on a random face
+    for (size_t i = 0; i < cables.size(); i ++) {	
+      cables[i]->setControlInput(lengths[i], dt);
+    }
 
-    if( (run == 4000)&&( deltaModelCOM().norm() < COM_EPSILON )&&( !finished ) ) {
+    steps++;
+    if( steps == 20000 ) {
+      simMode = 1;
+      steps = 0;
+    }
+  }
+  // Center the CUBE!!!
+  // else if( (timePassed < CENTER_TIME ) ){
+  else if( simMode == 1 ){
+    // if( (timePassed - SETUP_TIME)<dt) {
+    if( steps == 0 ) {
+      cout << "re-centering cube"<<endl;
+    }
+    // }
+    for (size_t i = 0; i < cables.size(); i ++) {	
+      // cables[i]->setControlInput(triangleStart[i], dt);
+      cables[i]->setControlInput(centerCube[i], dt);
+    }
+
+    steps++;
+    if( steps == 25000 ) {
+      simMode = 2;
+      steps= 0;
+    }
+  }
+  // get random inputs to use for the rLengths, initialize values used in future
+  else if( simMode == 2 ) {
+      // run this once at the beginning
+      randomizeRLengths();
+      initialCOM = getModelCOM();
+      initialOrientation = cube[0]->orientation();
+      cout<< "finding random rLengths"<<endl;
+
+      simMode = 3;
+  }
+  // Set cable rest lengths to the random ones we have picked
+  else if( simMode == 3) {
+    if( steps == 0 ) {
+      cout<< "sending commands"<<endl;
+    }
+    for (size_t i = 0; i < cables.size(); i ++) {	
+      if( cables[i]->getTension() < MIN_TENSION) {
+        // if cable is below min tension, shorten lengths
+        lengths[i] -= RL_STEP_SIZE;
+      }
+      cables[i]->setControlInput(lengths[i], dt);
+    }
+
+    steps++;
+    // wait for cube to slow down before writing to file
+    if( steps > 50000 ) {
       if( cablesAboveTension( MIN_TENSION ) ) {
-        writeData( OUT_FILE );
+        writeData( outFile );
       }
-      cout<< "done with rLengths: ";
-      for( int i = 0; i < 12; i++ ) {
-        cout<< rLength[i] << ", ";
+      else{
+        cout<< "Data not written to file, tensions too low" <<endl;
       }
-      cout<< endl;
-      stepRLength();
-      // finished one center-of-mass movement. Set up everything to start another
-      timePassed = 0.0;
-    }
-
-
-    // if enough time has passed, actuate cables
-    for (size_t i = 0; i < cables.size(); i ++) {	
-      cables[i]->setControlInput(rLength[i], dt);
-      if( cables[i]->getRestLength() < MIN_RL ) {
-        cout<< "cable rLength was less than MIN_RL"<<endl;
-      }
-    }
-  }
-  else{
-    if( timePassed == dt ) {
-      cout<< "press enter"<<endl;
-    }
-    for (size_t i = 0; i < cables.size(); i ++) {	
-      cables[i]->setControlInput(triangleStart[i], dt);
+      // /* Debugging */
+      // cout<< "Done with commanded lengths: ";
+      // for( int i = 0; i < 12; i++ ) {
+      //   cout<< lengths[i] << ", ";
+      // }
+      // cout<< endl;
+      // cout<< "Actual rest lengths: ";
+      // for( int i = 0; i < 12; i++ ) {
+      //   cout<< cables[i]->getRestLength() <<", ";
+      // }
+      // cout<< endl;
+      steps = 0;
+      simMode = 1;
     }
   }
 
-
-
-  /*
-   * 1. Recalculate center of mass 
-   *    a. if change is below threshold and all ropes
-   * maintain the minimum tension:
-   *       i. print the commanded rLengths and the output
-   * center of mass to a file
-   *       ii. while(true) {
-   *          increase rLengths[index] by 0.25.
-   *          if(rLengths[index]>MAX_RL) {
-   *             set rLengths[index] to MIN_RL
-   *             increment index. if index > 
-   *          else{
-   *             break;
-   *          }
-   *
-   *               
-   *
-   * 2. increment the current rLengths index
-   */
-
-
-
-/*
-// shorten the cables in shorten_vector
-currRestLength = cables[i]->getRestLength();
-// Calculate the minimum rest length for this cable.
-// Remember that minLength is a percent.
-minRestLength = initialRL[shorten_vector[i]->getTags()] * minLength;
-// If the current rest length is not too small
-if( currRestLength > minRestLength ) {
-// output a progress bar for the controller, to track when control occurs.
-cout << ".";
-nextRestLength = currRestLength - rate * dt;
-//DEBUGGING
-//cout << "Next Rest Length: " << nextRestLength << endl;
-shorten_vector[i]->setControlInput(nextRestLength,dt);
-}
-}   
-for (size_t i = 0; i < lengthen_vector.size(); i ++) {	
-// lengthen the cables in lengthen_vector
-currRestLength = lengthen_vector[i]->getRestLength();
-// Calculate the minimum rest length for this cable.
-// Remember that minLength is a percent.
-minRestLength = initialRL[lengthen_vector[i]->getTags()] * minLength;
-// If the current rest length is not too small
-if( lengthen_vector[i]->getTension() > 1 ){
-// output a progress bar for the controller, to track when control occurs.
-cout << "lengthen";
-nextRestLength = currRestLength + rate * dt;
-//DEBUGGING
-//cout << "Next Rest Length: " << nextRestLength << endl;
-lengthen_vector[i]->setControlInput(nextRestLength,dt);
-}
-else if( currRestLength > minRestLength) {
-cout << "shorten";
-nextRestLength = currRestLength - rate * dt;
-//DEBUGGING
-//cout << "Next Rest Length: " << nextRestLength << endl;
-lengthen_vector[i]->setControlInput(nextRestLength,dt);
 }
 
-}   
-}
-*/
-}
+
+
 
 
 /*  ///////////////// Linear Math Functions /////////////////  */

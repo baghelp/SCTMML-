@@ -67,6 +67,9 @@
 #include <vector>
 #include <iostream>
 #include <fstream> 
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "helpers/FileHelpers.h"
 #include <stdexcept>
 #include <string.h>
@@ -74,19 +77,26 @@
 #include "./../../QuadProgpp/src/QuadProg++.hh" 
 
 
+
 #define GRAVITY 9.8
 #define PAYLOAD_MASS 10
 #define ROD_MASS 6
 #define NUM_CABLES 12
+#define NUM_RODS 6
 #define MIN_TENSION 0.5
-#define COM_EPSILON 0.1
-#define RL_STEP_SIZE 1
+#define COM_EPSILON 0.01
+#define RL_STEP_SIZE 0.1
+// Units don't make sense in NTRT, make sure to convert to real lengths when
+// moving to meatspace
 #define MAX_RL 10
 #define MIN_RL 0.5
+#define CENTR_RL 5.27272
 // #define RL_STEP_SIZE 1
 // #define MAX_RL 3
 // #define MIN_RL 1
-#define OUT_FILE "./dataLog.txt"
+// #define OUT_FILE "./nnContinuous.txt"
+#define CENTER_TIME 4.0 
+#define SETUP_TIME 2.0
 using namespace std;
 using namespace boost::numeric;
 
@@ -97,7 +107,12 @@ typedef ublas::matrix<double> mat;
 typedef ublas::vector<double> vec;
 
 /**
- * A controller to apply the length change in the cables of the 3-bar example
+ * A controller to apply the length change in the 
+ 
+
+
+
+ * cables of the 3-bar example
  * model, for the NTRT Introduction Seminar on 2016-09-28 in BEST.
  */
 class dataCollection : public tgObserver<TensegrityModel>, public tgSubject<dataCollection>
@@ -118,8 +133,9 @@ public:
    * cables upon which to act. All the cables which have a tag in this list of tags
    * will be acted upon by this controller.
    */
-  dataCollection(double startTime, double minTension, double rate,
-			    double angle);
+  // dataCollection(double minTension, double rate,
+			    // double angle);
+  dataCollection( string outFile );
     
   /**
    * Nothing to delete, destructor must be virtual
@@ -146,18 +162,6 @@ public:
 
   /**
    */
-  virtual void moveTheBall(double x, double y, double z );
-
-  /**
-   */
-  pair<btVector3*, btVector3*> getEnds(typeof(tgBaseRigid)* member);
-
-  /**
-   */
-  // pair<mat*, mat*> QRDecomp( mat A );
-
-  /**
-   */
   vec proj( vec, vec );
 
   /**
@@ -170,23 +174,15 @@ public:
 
   /**
    */
-  btVector3 deltaModelCOM();
-
+  btVector3 getDeltaModelCOM();
 
   /**
    */
   btVector3 getModelCOM();
 
-
-  /**
-   */
-  void stepRLength();
-
-
   /**
    */
   bool cablesAboveTension( double );
-
 
   /**
    */
@@ -205,7 +201,7 @@ protected:
   /**
    * A helper function to setup Conectivity matrix
    */
-  void initializeController( );
+  void randomizeRLengths( );
 
   /**
    * Return a matrix with the passed in vector as its diagonal elements, and
@@ -220,9 +216,9 @@ private:
    * The private variables for each of the values passed in to the constructor.
    */
   double startTime;
-  double minTension;
-  double rate;
-  double angleOfTravel;
+  // double minTension;
+  // double rate;
+  // double angleOfTravel;
   std::vector<tgBasicActuator*> cables;
   std::vector<btVector3> desiredCableDirections;
   std::vector<tgRod*> rods;
@@ -235,74 +231,18 @@ private:
   std::string const RODS[6] = {"rod_1", "rod_2", "rod_3", "rod_4", "rod_5",
     "rod_6"};
   std::string const CUBE = "super_cube";
-  double rLength[12] = {MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL};
+  double lengths[12];
   double triangleStart[12] = {2.5, 0.5, 0.5, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL, MIN_RL};
+  double centerCube[12] = {CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL, CENTR_RL };
   bool finished = false;
   int rlptr = 0;
   btVector3 COM = btVector3(0,0,0);
   btVector3 initialCOM = btVector3(0,0,0);
-  int run = 0;
-  //
-  // rows = cables, colums = nodes. connections are 1 or -1
-  // (-1 is the cube connection, 1 is the rod connection)
-  int C[12][13] = {
-  //1   2   3   4   5   6   7   8   9   0   1   2   1  
-    {1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1 }, 
-    {0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1 },
-    {0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1 },
-    {0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0, -1 },
-    {0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0, -1 },
-    {0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0, -1 },
-    {0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0, -1 },
-    {0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0, -1 },
-    {0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0, -1 },
-    {0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0, -1 },
-    {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0, -1 },
-    {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1, -1 }
-  };
-  
-  ublas::matrix<double> Connectivity;// = mat(12, 13);
-  ublas::vector<double> A;
-  // btMatrixX<double> Connectivity;// = mat(12, 13);
-  // btMatrixX<double> A;// = mat(12, 13);
-
-  int extForces[3][13] = {
-  //                                   |
-  //1  2  3  4  5  6  7  8  9  0  1  2  1
-    {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-    {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },
-    {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  -GRAVITY*PAYLOAD_MASS}
-  };
-
-  //std::int Connectivity[13][24] = {
-  // //                                   |
-  // //1  2  3  4  5  6  7  8  9  0  1  2  1  2  3  4  5  6  7  8  9  0  1  2
-  //   1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0  0  0  0  0  0  0 // 1 -- rope
-  //   0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0  0  0  0  0  0 // 2 -- rope
-  //   0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0  0  0  0  0 // 3 -- ...
-  //   0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0  0  0  0 // 4
-  //   0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0  0  0 // 5
-  //   0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0  0 // 6
-  //   0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0  0 // 7
-  //   0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0  0 // 8
-  //   0  0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0  0 // 9
-  //   0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0  0 // 10
-  //   0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1  0 // 11
-  //   0  0  0  0  0  0  0  0  0  0  0  1  0  0  0  0  0  0  0  0  0  0  0 -1 // 12 -- rope
-  //   0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 // 13 -- cube
-
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 2
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 3
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 4
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 5
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 6
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 7
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 8
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 9
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 10 
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 11
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 12
-    // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 // 13
+  int steps = 0;
+  bool messaged = false;
+  btVector3 initialOrientation;
+  int simMode = 0; // 0 = setup, 1 = Center, 2 = initialize rLengths, 3 = command rLengths
+  string outFile;
 
   /**
    * Need an accumulator variable to determine when to start the controller.

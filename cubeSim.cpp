@@ -24,21 +24,6 @@
  * $Id$
  */
 
-// This application
-#include "yamlbuilder/TensegrityModel.h"
-#include "dataCollection.h"
-// This library
-#include "core/terrain/tgBoxGround.h"
-#include "core/tgModel.h"
-#include "core/tgSimulation.h"
-#include "core/tgSimViewGraphics.h"
-#include "core/tgWorld.h"
-// Bullet Physics
-#include "LinearMath/btVector3.h"
-// The C++ Standard Library
-#include <iostream>
-#include <string>
-#include <vector>
 #include "cubeSim.h"
 
 /**
@@ -46,16 +31,23 @@
  * @param[in] argc the number of command-line arguments
  * @param[in] argv argv[0] is the executable name
  * @param[in] argv argv[1] is the path of the YAML encoded structure
+ * @param[in] argv argv[2] is the path of the YAML encoded structure
  * @return 0
  */
 int main(int argc, char** argv)
 {
+
     // For this YAML parser app, need to check that an argument path was
     // passed in.
     if (argv[1] == NULL)
     {
-      std::cout<< "TAMLSim.cpp, line 56"<<std::endl;
-      throw std::invalid_argument("No arguments passed in to the application. You need to specify which YAML file you wouldd like to build.");
+      std::cout<< "cubeSim.cpp, line 43"<<std::endl;
+      throw std::invalid_argument("Not enough arguments passed in to the application. You need to specify which YAML file you would like to build, as well as a file to write data to.");
+    }
+    if (argv[2] == NULL)
+    {
+      std::cout<< "cubeSim.cpp, line 48"<<std::endl;
+      throw std::invalid_argument("Not enough arguments passed in to the application. You need to specify which YAML file you would like to build, as well as a file to write data to.");
     }
   
     // create the ground and world. Specify ground rotation in radians
@@ -70,9 +62,10 @@ int main(int argc, char** argv)
     tgWorld world(config, ground);
 
     // create the view
-    const double timestep_physics = 0.0001; // seconds
-    //const double timestep_physics = 0.001;
+    // const double timestep_physics = 1.f/60.f; // seconds
+    const double timestep_physics = 0.0001;
     const double timestep_graphics = 1.f/60.f; // seconds
+    // const double timestep_graphics = 1.0; // seconds
     tgSimViewGraphics view(world, timestep_physics, timestep_graphics);
 
     // create the simulation
@@ -81,6 +74,7 @@ int main(int argc, char** argv)
     // create the models with their controllers and add the models to the simulation
     // This constructor for TensegrityModel takes the 'debugging' flag as the
     // second argument.
+    cout<< std::string(argv[2]) <<endl;
     TensegrityModel* const myModel = new TensegrityModel(argv[1],false);
 
     // Attach a controller to the model, if desired.
@@ -89,57 +83,31 @@ int main(int argc, char** argv)
 
     // Parameters for the dataCollection are specified in that .h file,
     // repeated here:
-    double startTime = 5.0;
-    double minTension = 1;
-    double rate = 9.0;
-    double angleOfTravel = 0;
-    std::vector<std::string> lengthenTags;
-    std::vector<std::string> shortenTags;
+    // double minTension = 1;
+    // double rate = 9.0;
+    // double angleOfTravel = 0;
+    // std::vector<std::string> lengthenTags;
+    // std::vector<std::string> shortenTags;
     // See the threeBarModel.YAML file to see where "vertical_string" is used.
-    lengthenTags.push_back("top_string");
-    shortenTags.push_back("bottom_string");
+    // lengthenTags.push_back("top_string");
+    // shortenTags.push_back("bottom_string");
     //lengthenTags.push_back("cube_string");
     
     // Create the controller
-    dataCollection* const myController = new dataCollection( startTime, minTension, rate, angleOfTravel);
+    // dataCollection* const myController = new dataCollection( minTension, rate, angleOfTravel);
+    dataCollection* const myController = new dataCollection( std::string( argv[2] ) );
     // FILL IN 6.6 HERE
-    // FILL_IN* const myController = new FILL_IN(startTime, minLength, rate, tagsToControl);
+    // FILL_IN* const myController = new FILL_IN( minLength, rate, tagsToControl);
     
     // Attach the controller to the model
     myModel->attach(myController);
     // FILL IN 6.7 HERE
 
     // Add the model to the world
-    while( !finished ) {
-      simulation.addModel(myModel);
-      simulation.run();
-
+    simulation.addModel(myModel);
+    simulation.run();
     // teardown is handled by delete
     return 0;
 }
 
-
-void stepRLength() {
-  // increment the current value
-  rLength[rlptr] += RL_STEP_SIZE;
-  if( rLength[rlptr] > MAX_RL ) {
-    // if value overflows, go up one
-    rlptr++;
-    if( rlptr >= sizeof(rLength)/sizeof(rLength[0]) ) {
-      // we've gone through all the values. set finished flag to true
-      finished = true;
-      cout<<"done"<<endl;
-      return;
-    }
-    stepRLength();
-  }
-  else {
-    // otherwise, everything below this value should be at minimum
-    for( int i = 0; i < rlptr; i++ ) {
-      rLength[i] = MIN_RL;
-    }
-    rlptr = 0;
-  }
-  return;
-}
 
