@@ -316,7 +316,7 @@ void dataCollection::onStep(TensegrityModel& subject, double dt)
     }
 
     steps++;
-    if( steps == 25000 ) {
+    if( steps == 10000 ) {
       simMode = 2;
       steps= 0;
     }
@@ -339,7 +339,7 @@ void dataCollection::onStep(TensegrityModel& subject, double dt)
     for (size_t i = 0; i < cables.size(); i ++) {	
       if( (cables[i]->getTension() < MIN_TENSION)&&
           (cables[i]->getRestLength() > MIN_RL)&&
-          (steps>10000) ){
+          (steps>15000) ){
         // if cable is below min tension, shorten lengths
         lengths[i] -= RL_STEP_SIZE;
       }
@@ -348,7 +348,7 @@ void dataCollection::onStep(TensegrityModel& subject, double dt)
 
     steps++;
     // wait for cube to slow down before writing to file
-    if( steps > 50000 ) {
+    if( steps > 30000 ) {
       if( cablesAboveTension( MIN_TENSION ) ) {
         writeData( outFile );
       }

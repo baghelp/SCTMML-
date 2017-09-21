@@ -89,7 +89,7 @@
 // Units don't make sense in NTRT, make sure to convert to real lengths when
 // moving to meatspace
 #define MAX_RL 10
-#define MIN_RL 0.2
+#define MIN_RL 1
 #define CENTR_RL 5.27272
 // #define RL_STEP_SIZE 1
 // #define MAX_RL 3
