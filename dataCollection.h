@@ -83,13 +83,13 @@
 #define ROD_MASS 6
 #define NUM_CABLES 12
 #define NUM_RODS 6
-#define MIN_TENSION 0.5
+#define MIN_TENSION 6
 #define COM_EPSILON 0.01
 #define RL_STEP_SIZE 0.1
 // Units don't make sense in NTRT, make sure to convert to real lengths when
 // moving to meatspace
 #define MAX_RL 10
-#define MIN_RL 0.5
+#define MIN_RL 0.2
 #define CENTR_RL 5.27272
 // #define RL_STEP_SIZE 1
 // #define MAX_RL 3

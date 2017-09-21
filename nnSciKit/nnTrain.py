@@ -19,29 +19,66 @@ def ReLU( X ) :
 TRAIN_PERCENT = 0.8
 CV_TEST_PERCENT = 0.2
 
-data = np.loadtxt(open("dataLog.txt", "rb"), delimiter=", ")
-np.random.shuffle(data)
+data = np.loadtxt(open("multiData.txt", "rb"), delimiter=", ")
+# X = np.linspace(0, 10, 1000)
+# Z = np.linspace(0, 10, 1000)
+# y = 134.52435*X + 339.0*Z
+# X = X.reshape(X.shape[0],1)
+# Z = Z.reshape(Z.shape[0],1)
+# y = y.reshape(y.shape[0],1)
+# data = X
+# data = np.concatenate((X, Z, y), axis = 1)
+# np.random.shuffle(data)
 m = data.shape[0]
 mylist = [1]*m
+# # print "m: ",m
 data = np.insert(data, 0, mylist, axis=1)
+print "datashape: ", data.shape
+# print "data(1): ",data[1, :]
 num_train_samples = int(TRAIN_PERCENT*m);
 num_cv_samples = int(CV_TEST_PERCENT*m);
 num_test_samples = int(CV_TEST_PERCENT*m);
 print num_train_samples," samples for training"
 print num_cv_samples," samples for validation"
-# X = (data[:num_train_samples, :4])#0-12])
-X = (data[:num_train_samples, :-12])
+# X = (data[:num_train_samples, :3])
+# y = (data[:num_train_samples, -1:])
+# Xval = (data[num_train_samples:num_train_samples+num_cv_samples, :3])
+# yval = (data[num_train_samples:num_train_samples+num_cv_samples, -1:])
+# print "xshape: ",X.shape
+# print "yshape: ",y.shape
+# print "X(1) : ", X[1,:]
+# print "y(1) : ", y[1,:]
+X = (data[:num_train_samples, :7])#0-12])
 y = (data[:num_train_samples, -12:])
-# Xval = (data[num_train_samples:num_train_samples+num_cv_samples, :4])#0-12])
-Xval = (data[num_train_samples:num_train_samples+num_cv_samples, :0-12])
-yval = (data[num_train_samples:num_train_samples+num_cv_samples, 0-12:])
-Xtest = (data[num_train_samples+num_cv_samples:num_train_samples+num_cv_samples+num_test_samples, :0-12])
-ytest = (data[num_train_samples+num_cv_samples:num_train_samples+num_cv_samples+num_test_samples, 0-12:])
+test = X[:,1:4]
+deltaMag= np.linalg.norm(test, axis=1)
+print "big: ", deltaMag.shape
+# plt.hist( deltaMag, bins = 'auto' )
+# plt.title("histogram with auto bins")
+# plt.show()
+
+regions = deltaMag > 6.5
+print "shape of regions: ", regions.shape
+print "X samples that match: ",X[regions,:].shape
+X = X[regions,:7]
+y = y[regions,-12:]
+# X = (data[:TRAIN_PERCENT*X.shape[0], :7])#0-12])
+
+
+
+# X = (data[:num_train_samples, :-12])
+print "X(1) : ", X[1,:]
+# Xval = (data[num_train_samples:num_train_samples+num_cv_samples, :-12])
+Xval = (data[num_train_samples:num_train_samples+num_cv_samples, :7])
+yval = (data[num_train_samples:num_train_samples+num_cv_samples, -12:])
+Xtest = (data[num_train_samples+num_cv_samples:num_train_samples+num_cv_samples+
+    num_test_samples, :7])
+ytest = (data[num_train_samples+num_cv_samples:num_train_samples+num_cv_samples+
+    num_test_samples, 0-12:])
 # print data[0,0]
-# print X[0,0]
 
 reg = MLPRegressor( #neural net
-        hidden_layer_sizes=(12),  activation='relu', solver='adam',
+        hidden_layer_sizes=(100,100,100, 100, 100, 100),  activation='relu', solver='adam',
         alpha=0.001,batch_size='auto',
         learning_rate='constant', learning_rate_init=0.01, power_t=0.5,
         max_iter=10000, shuffle=True,
@@ -100,10 +137,10 @@ print "\n\n----Neural Net----"
 # print "input"
 # print sample
 print "prediction"
-# print y_predict[0:4,:]
+print y_predict[0:4]
 # print y_predict
-# print "real"
-# print yval[0:4,:]
+print "real"
+print yval[0:4,:]
 print "avg error = "
 # print np.linalg.norm(y_predict - yval)/num_cv_samples
 print np.mean(abs(y_predict - yval))
@@ -213,28 +250,29 @@ outFile.close()
 # #
 # # # est = LinearRegression()
 # est = MLPRegressor(
-#         hidden_layer_sizes=(3),  activation='relu', solver='adam',
+#         hidden_layer_sizes=(100,100,100, 100, 100, 100),  activation='relu', solver='adam',
 #         alpha=0.001,batch_size='auto',
 #         learning_rate='constant', learning_rate_init=0.01, power_t=0.5,
-#         max_iter=1000, shuffle=True,
+#         max_iter=100000, shuffle=True,
 #         random_state=9, tol=0.0001, verbose=False, warm_start=False,
 #         momentum=0.9, nesterovs_momentum=True,
 #         early_stopping=False, validation_fraction=0.1,
 #         beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-# train_sizes, train_scores, test_scores = learning_curve(est, X, y)
-# train_s_mean = np.mean(train_scores, axis=1)
-# train_s_std = np.std(train_scores, axis=1)
-# test_s_mean = np.mean(test_scores, axis=1)
-# test_s_std = np.std(test_scores, axis=1)
-# plt.grid()
-# plt.fill_between(train_sizes, train_s_mean - train_s_std,
-#         train_s_mean + train_s_std, alpha = 0.1, color="r")
-# plt.fill_between(train_sizes, test_s_mean - test_s_std,
-#         test_s_mean + test_s_std, alpha = 0.1, color="g")
-# plt.plot(train_sizes, train_s_mean, 'o-', color="r", label="Training score")
-# plt.plot(train_sizes, test_s_mean, 'o-', color="g", label="Cross-val score")
-# plt.legend(loc="best")
-# plt.show()
+# est = LinearRegression(fit_intercept=True, normalize=False) #Linear Regression
+train_sizes, train_scores, test_scores = learning_curve(reg, X, y)
+train_s_mean = np.mean(train_scores, axis=1)
+train_s_std = np.std(train_scores, axis=1)
+test_s_mean = np.mean(test_scores, axis=1)
+test_s_std = np.std(test_scores, axis=1)
+plt.grid()
+plt.fill_between(train_sizes, train_s_mean - train_s_std,
+        train_s_mean + train_s_std, alpha = 0.1, color="r")
+plt.fill_between(train_sizes, test_s_mean - test_s_std,
+        test_s_mean + test_s_std, alpha = 0.1, color="g")
+plt.plot(train_sizes, train_s_mean, 'o-', color="r", label="Training score")
+plt.plot(train_sizes, test_s_mean, 'o-', color="g", label="Cross-val score")
+plt.legend(loc="best")
+plt.show()
 # plot_learning_curve(estimator, title, X, y, (0.7, 1.01), cv=cv, n_jobs=4)
 # #
 # #

@@ -156,19 +156,28 @@ void dataCollection::onSetup( TensegrityModel& subject )
 
 
 void dataCollection::randomizeRLengths() {
+  int index = rand()%12;
   srand(time(NULL));
-  lengths[0] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[1] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[2] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[3] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[4] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[5] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[6] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[7] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[8] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[9] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[10] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
-  lengths[11] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // // MIN_RL + (something from 0 to 10)
+  // lengths[0] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[1] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[2] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[3] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[4] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[5] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[6] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[7] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[8] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[9] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[10] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+  // lengths[11] = MIN_RL + ( (double) ( rand() % 10000) )/1000;
+ 
+  // Make most of them super loose, and then make one of them really tight.
+  // Later, we will tighten the loose ones until they are above min_tension
+  for( int i = 0; i < NUM_CABLES; i++ ) {
+    lengths[i] = MAX_RL;
+  }
+  lengths[index] = MIN_RL + ( (double) ( rand() % 1000) )/1000;
 
 }
 
@@ -328,7 +337,9 @@ void dataCollection::onStep(TensegrityModel& subject, double dt)
       cout<< "sending commands"<<endl;
     }
     for (size_t i = 0; i < cables.size(); i ++) {	
-      if( cables[i]->getTension() < MIN_TENSION) {
+      if( (cables[i]->getTension() < MIN_TENSION)&&
+          (cables[i]->getRestLength() > MIN_RL)&&
+          (steps>10000) ){
         // if cable is below min tension, shorten lengths
         lengths[i] -= RL_STEP_SIZE;
       }
